@@ -1,0 +1,84 @@
+# =========================================================
+# PERSIAN CXN QUERIES
+#
+# Note on reading relations:
+# X rel Y => is X is the "rel" of Y
+# e.g. ?target doc:ncsubj ?source => ?target is the ncsubj of ?source
+#
+# Note on CXN naming:
+# - if we need multiple queries for the same cxn, use a . to
+#   indicate a subtype, e.g. T-subj_S-verb.type2, etc.
+# - CXNs of interest to IARPA (privileged) should be suffixed with
+#   two *'s, e.g. **T-subj_S-verb.
+
+# =========================================================
+# Subject-Verb construction: poverty infects ...
+#
+START CXN: **T-subj_S-verb
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+	?target doc:subj ?source .
+	?source doc:hasPOS ?spos .
+	FILTER regex(?spos, "^V") .
+    FILTER (!regex(?slemma, "^(است|بود|کرد|کرده است|کنند|کند|نیستند|نیست|باشد|شد|می‌شود|شود|شده بود|گرفتند|گرفت|می‌کنند|بردن|برد|می‌برد)$","i")) .
+}
+END CXN
+
+# ==========================================================
+# Verb-Object construction: ... escape poverty ... ???
+#
+START CXN: **S-verb_T-dobj
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?raword rdf:type doc:Word .
+    ?raword doc:inSentence ?sent .
+    ?raword doc:dobj ?source .
+    ?target doc:predep ?raword .
+    ?source doc:hasPOS ?spos .
+    FILTER regex(?spos, "^V") .
+}
+END CXN
+
+# ==========================================================
+# Ezafe construction, via MOZ
+#
+START CXN: **S-noun_ezafe_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?target doc:hasPOS ?tpos .
+    ?source doc:hasPOS ?spos .
+    FILTER regex(?spos, "^N") .
+    FILTER regex(?tpos, "^N") .
+    ?target doc:moz ?source .
+}
+END CXN

@@ -1,0 +1,8 @@
+@S@ =IN @T@	0.99	Source PREP Target (battle against poverty)
+@T@ (continue|start|begin|began|use)(|s|d|ed) to @S@	0.99	poverty continues to grip
+@T@ (is|are|was|were) (continu|start|beginn)ing to @S@	0.99	poverty is beginning to grip
+@T@ has (continued|started|begun) to @S@	0.99	povery has started to grip
+@T@ @S@	0.96	Target Source (economic growth,poverty trap)
+@S@ @T@	0.96	Source Target (low income)
+@T@ is @S@	0.95	poverty is disease
+@T@ is a @S@	0.95	poverty is a disease

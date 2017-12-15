@@ -1,0 +1,334 @@
+# =========================================================
+# SPANISH CXN QUERIES
+#
+# Note on reading relations:
+# X rel Y => is X is the "rel" of Y
+# e.g. ?target doc:ncsubj ?source => ?target is the ncsubj of ?source
+#
+# Note on CXN naming:
+# - if we need multiple queries for the same cxn, use a . to
+#   indicate a subtype, e.g. T-subj_S-verb.type2, etc.
+# - CXNs of interest to IARPA (privileged) should be suffixed with
+#   two *'s, e.g. **T-subj_S-verb.
+
+# =========================================================
+# Subject-Verb construction: poverty infects ...
+#
+START CXN: **T-subj_S-verb
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+    {
+    	?target (doc:subj|doc:subjpac) ?source .
+    } UNION {
+        ?source doc:snmod ?target .
+    }
+	?source (doc:hasPOS|doc:hasRPOS) ?spos .
+	FILTER regex(?spos, "^V") .
+    FILTER (?slemma != "ser") .
+}
+END CXN
+
+# ==========================================================
+# Verb-Object construction: ... escape poverty ... ???
+#
+START CXN: **S-verb_T-dobj
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?target doc:dobj ?source .
+    ?source doc:hasPOS ?spos .
+    FILTER regex(?spos, "^V") .
+}
+END CXN
+
+# ==========================================================
+# Verb-Object construction: ... escape poverty ... ???
+#
+START CXN: **S-verb_a_la_T-dobj
+REGEXP: \b[^=]+=(?P<slemma>[^=]+)=V[^=]*=(?P<sidx>\d+) a=a=PREP=\d+ [^=]+=el=ART=\d+ [^=]+=(?P<tlemma>[^=]+)=N[^=]*=(?P<tidx>\d+)\b
+
+# =========================================================
+# Verb-Object constructions: abatir la pobreza
+#
+START CXN: **S-verb_la_T-noun.POS
+REGEXP: \b[^=]+=(?P<slemma>[^=]+)=(?:V)[^=]*=(?P<sidx>\d+) [^=]+=[^=]+=ART=\d+ [^=]+=(?P<tlemma>[^=]+)=N[^=]*=(?P<tidx>\d+)\b
+
+# =========================================================
+# 's Posessives: NA
+#
+
+# =========================================================
+# N of N constructions: flagelo de la pobreza
+#
+START CXN: **S-noun_of_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    FILTER regex(?spos, "^(N|VLfin|A)") .
+    ?target (doc:hasPOS|doc:hasRPOS) ?tpos .
+    FILTER regex(?tpos, "^N") .
+    ?ofword rdf:type doc:Word .
+    ?ofword doc:inSentence ?sent .
+    ?ofword doc:hasLemma "de"^^xsd:string .
+    ?ofword (doc:spmod|doc:cc) ?source .
+    ?target doc:objprep ?ofword .
+}
+END CXN
+
+# =========================================================
+# N of N constructions via POS tags: flagelo de la pobreza
+#
+START CXN: **S-noun_of_T-noun.POSdeART
+REGEXP: \b[^=]+=(?P<slemma>[^=]+)=(?:N|VLfin)[^=]*=(?P<sidx>\d+) [^=]+=de=[^=]+=\d+ [^=]+=[^=]+=ART=\d+ [^=]+=(?P<tlemma>[^=]+)=N[^=]*=(?P<tidx>\d+)\b
+
+# =========================================================
+# N of N constructions via POS tags: flagelo de la pobreza
+#
+START CXN: **S-noun_of_T-noun.POSdel
+REGEXP: \b[^=]+=(?P<slemma>[^=]+)=(?:N|VLfin)[^=]*=(?P<sidx>\d+) [^=]+=(?:de|del)=[^=]+=\d+ [^=]+=(?P<tlemma>[^=]+)=N[^=]*=(?P<tidx>\d+)\b
+
+# =========================================================
+# Verb Prep Noun: escapar a la pobreza
+#
+START CXN: S-verb_Prep_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    FILTER regex(?spos, "^V") .
+    ?prep rdf:type doc:Word .
+    ?prep doc:inSentence ?sent .
+    ?prep doc:hasPOS ?prepPOS .
+    ?target doc:objprep ?prep .
+    FILTER regex(?prepPOS, "^(I|SPS|PREP)") .
+    ?prep (doc:spobj|doc:iobj|doc:cc|doc:spmod) ?source .
+}
+END CXN
+
+# =========================================================
+# ==========================================================
+# Noun noun modification compounds: poverty trap
+#
+#START CXN: T-noun_mod_S-noun
+#SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+#WHERE {
+#    ?sent rdf:type doc:Sentence .
+#    ?sent doc:hasIdx ?sentidx .
+#    ?target rdf:type doc:Word .
+#    ?target doc:hasIdx ?tidx .
+#    ?target doc:hasLemma ?tlemma .
+#    ?source rdf:type doc:Word .
+#    ?source doc:hasIdx ?sidx .
+#    ?source doc:hasLemma ?slemma .
+#    ?target doc:inSentence ?sent .
+#    ?source doc:inSentence ?sent .
+#    ?source doc:hasPOS ?spos .
+#    ?target doc:hasPOS ?tpos .
+#    FILTER regex(?spos, "^N") .
+#    FILTER regex(?tpos, "^N") .
+#    ?target doc:ncmod ?source .    
+#}
+#END CXN
+
+# ==========================================================
+# adjective noun modification: pobreza estructural
+#
+START CXN: S-adj_mod_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    ?target doc:hasPOS ?tpos .
+    FILTER regex(?spos, "^(J|A)") .
+    FILTER regex(?tpos, "^N") .
+    ?source doc:adjmod ?target .    
+}
+END CXN
+
+# ==========================================================
+# adjective noun modification:
+# crecimiento=crecimiento=NC=10 económico=económico=ADJ=11
+#
+START CXN: T-adj_mod_S-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    ?target doc:hasPOS ?tpos .
+    FILTER regex(?tpos, "^(J|A)") .
+    FILTER regex(?spos, "^N") .
+    ?target doc:adjmod ?source .    
+}
+END CXN
+
+# =========================================================
+# Copular construction: poverty is a cancer
+#
+START CXN: **T-subj_es_S-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:inSentence ?sent .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+    ?target doc:hasPOS ?tpos .
+	?source rdf:type doc:Word .
+	?source doc:inSentence ?sent .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+    ?source doc:hasPOS ?spos .
+	FILTER regex(?spos, "^(N|A|J)") .
+	FILTER regex(?tpos, "^N") .
+    ?cop rdf:type doc:Word .
+    ?cop doc:inSentence ?sent .
+    ?cop doc:hasLemma "ser"^^xsd:string .
+    ?target doc:subj ?cop .
+    ?source doc:att ?cop .
+}
+END CXN
+
+# ==========================================================
+# Verb PP  constructions: caer en la pobreza
+# subsumed under more general V Prep N cxn
+
+#START CXN: S-verb_en_T-noun
+#SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+#WHERE {
+#   ?sent rdf:type doc:Sentence .
+#   ?sent doc:hasIdx ?sentidx .
+#   ?target rdf:type doc:Word .
+#   ?target doc:hasIdx ?tidx .
+#   ?target doc:hasLemma ?tlemma .
+#   ?source rdf:type doc:Word .
+#   ?source doc:hasIdx ?sidx .
+#   ?source doc:hasLemma ?slemma .
+#   ?target doc:inSentence ?sent .
+#   ?source doc:inSentence ?sent .
+#   ?source doc:hasPOS ?spos .
+#   FILTER regex(?spos, "^V") .
+#   ?target (doc:hasPOS|doc:hasRPOS) ?tpos .
+#   FILTER regex(?tpos, "^N") .
+#   ?ofword rdf:type doc:Word .
+#   ?ofword doc:inSentence ?sent .
+#   ?ofword doc:hasLemma "en"^^xsd:string .
+#   ?ofword (doc:spmod|doc:cc|doc:spobj) ?source .
+#   ?target doc:objprep ?ofword .
+#}
+#END CXN
+
+# =========================================================
+# Passive  constructions: encadenado por la pobreza
+# subsumed under more general V Prep N cxn
+
+#START CXN: S-verb_por_T-noun
+#SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+#WHERE {
+#   ?sent rdf:type doc:Sentence .
+#   ?sent doc:hasIdx ?sentidx .
+#   ?target rdf:type doc:Word .
+#   ?target doc:hasIdx ?tidx .
+#   ?target doc:hasLemma ?tlemma .
+#   ?source rdf:type doc:Word .
+#   ?source doc:hasIdx ?sidx .
+#   ?source doc:hasLemma ?slemma .
+#   ?target doc:inSentence ?sent .
+#   ?source doc:inSentence ?sent .
+#   ?source doc:hasPOS ?spos .
+#   FILTER regex(?spos, "^VLfin") .
+#   ?target (doc:hasPOS|doc:hasRPOS) ?tpos .
+#   FILTER regex(?tpos, "^N") .
+#   ?ofword rdf:type doc:Word .
+#   ?ofword doc:inSentence ?sent .
+#   ?ofword doc:hasLemma "por"^^xsd:string .
+#   ?ofword (doc:spmod|doc:cc) ?source .
+#   ?target doc:objprep ?ofword .
+#}
+#END CXN	       
+
+# ===========================================================
+# N PP constructions: avalancha contra pueblos pobres
+#
+
+START CXN: S-noun_prep_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+   ?sent rdf:type doc:Sentence .
+   ?sent doc:hasIdx ?sentidx .
+   ?target rdf:type doc:Word .
+   ?target doc:hasIdx ?tidx .
+   ?target doc:hasLemma ?tlemma .
+   ?source rdf:type doc:Word .
+   ?source doc:hasIdx ?sidx .
+   ?source doc:hasLemma ?slemma .
+   ?target doc:inSentence ?sent .
+   ?source doc:inSentence ?sent .
+   ?source doc:hasPOS ?spos .
+   FILTER regex(?spos, "^N") .
+   ?target (doc:hasPOS|doc:hasRPOS) ?tpos .
+   FILTER regex(?tpos, "^N") .
+   ?ofword rdf:type doc:Word .
+   ?ofword doc:inSentence ?sent .
+   ?ofword doc:hasLemma ?oflemma
+   FILTER regex(?oflemma, "(contra|para|a|entre)") .
+   ?ofword (doc:spmod|doc:cc) ?source .
+   ?target doc:objprep ?ofword .
+}
+END CXN

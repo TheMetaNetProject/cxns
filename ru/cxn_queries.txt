@@ -1,0 +1,299 @@
+# =========================================================
+# RUSSIAN CXN QUERIES
+#
+# Note on reading relations:
+# X rel Y => is X is the "rel" of Y
+# e.g. ?target doc:ncsubj ?source => ?target is the ncsubj of ?source
+#
+# Note on CXN naming:
+# - if we need multiple queries for the same cxn, use a . to
+#   indicate a subtype, e.g. T-subj_S-verb.type2, etc.
+# - CXNs of interest to IARPA (privileged) should be suffixed with
+#   two *'s, e.g. **T-subj_S-verb.
+
+# =========================================================
+# Subject-Verb construction: poverty infects ...
+#
+START CXN: **T-subj_S-verb
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+	?source doc:hasPOS ?spos .
+	?target doc:hasPOS ?tpos .
+	FILTER regex(?spos, "^V") .
+	FILTER regex(?tpos, "^N") .
+    {
+    	?target doc:subj ?source .
+    } UNION {
+        ?otherv rdf:type doc:Word .
+        ?otherv doc:inSentence ?sent .
+        ?otherv doc:hasPOS ?opos .
+        FILTER regex(?opos, "^V") .
+        ?target doc:subj ?otherv .
+        ?source doc:conj+ ?otherv .
+    }
+}
+END CXN
+
+# =========================================================
+# Subject-verb construction: backup incase parse fails
+# - common nom noun followed by matching number 3-marked V
+#
+START CXN: **T-subj_S-verb.POSseq
+REGEXP: \b[^=]+=(?P<tlemma>[^=]+)=Nc[fmnc](?P<number>[sp])n[ny]=(?P<tidx>\d+) [^=]+=(?P<slemma>[^=]+)=Vmi[pfs]3(?P=number)-a-[^=]+=(?P<sidx>\d+)\b
+
+# ==========================================================
+# Verb-Object construction: ... escape poverty ... ???
+#
+START CXN: **S-verb_T-dobj
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?target doc:dobj ?source .
+    ?source doc:hasPOS ?spos .
+    ?target doc:hasPOS ?tpos .
+    FILTER regex(?spos, "^V") .
+    FILTER regex(?tpos, "^N") .
+}
+END CXN
+
+# =========================================================
+# 's Posessives: NA
+#
+
+# =========================================================
+# N of N constructions: Пропасть=пропасть=Ncfsnn=0 нищеты=нищета=Ncfsgn=1
+#
+START CXN: **S-noun_of_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    ?target doc:hasPOS ?tpos .
+    FILTER regex(?spos, "^N") .
+    FILTER regex(?tpos, "^N[a-z]+g(n|y)$") .
+    ?target (doc:spmod|doc:qamod|doc:dobj) ?source .
+}
+END CXN
+
+# =========================================================
+# N of N constructions: backup in case dparse fails рабы=раб=Ncmpny=3 денег=деньги=Ncmpgn=4
+#
+START CXN: **S-noun_of_T-noun.POSseq
+REGEXP: \b[^=]+=(?P<tlemma>[^=]+)=N[^=]+=(?P<tidx>\d+) [^=]+=(?P<slemma>[^=]+)=N[^=]+g[ny]=(?P<sidx>\d+)\b
+
+# =========================================================
+# Copular construction: Бедность – это вирусное заболевание
+#
+START CXN: T-subj_cop_S-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+	?source doc:hasPOS ?spos .
+	?target doc:hasPOS ?tpos .
+	FILTER regex(?spos, "^N") .
+	FILTER regex(?tpos, "^N") .
+    {
+    	?target doc:subj ?source .
+    } UNION {
+        ?cop rdf:type doc:Word .
+        ?cop doc:inSentence ?sent .
+        ?cop doc:hasLemma "это"^^xsd:string .
+        ?target doc:ref ?cop .
+        ?cop doc:subj ?source .
+    }
+}
+END CXN
+
+# =========================================================
+# Copular construction: backup in case parse fails
+# бедность=бедность=Ncfsnn=5 -=-=-=6 это=это=P--nsnn=7 болезнь=болезнь=Ncfsnn=8
+#
+START CXN: T-subj_cop_S-verb.POSseq
+REGEXP: \b[^=]+=(?P<tlemma>[^=]+)=N[^=]+=(?P<tidx>\d+) (?:-=-=-=\d+ )?это=это=P[^=]+=\d+ [^=]+=(?P<slemma>[^=]+)=N[^=]+=(?P<sidx>\d+)\b
+
+# =========================================================
+# Copular Adj constructions
+#
+START CXN: T-subj_cop_S-adj
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+	?source doc:hasPOS ?spos .
+	?target doc:hasPOS ?tpos .
+	FILTER regex(?spos, "^A") .
+	FILTER regex(?tpos, "^N") .
+   	?target doc:subj ?source .
+}
+END CXN
+
+# =========================================================
+# Adj-S Noun-T modification constructions
+#
+START CXN: S-adj_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+	?source doc:hasPOS ?spos .
+	?target doc:hasPOS ?tpos .
+	FILTER regex(?spos, "^A") .
+	FILTER regex(?tpos, "^N") .
+   	?source doc:adjmod ?target .
+}
+END CXN
+
+# =========================================================
+# Adj-S Noun-T modification construction: backup in case parse fails
+# Тягостный=тягостный=Afpmsnf=0 регламент=регламент=Ncmsnn=1
+# make sure number/gender match
+#
+START CXN: S-adj_T-noun.POSseq
+REGEXP: \b[^=]+=(?P<slemma>[^=]+)=Af[pcs](?P<gen>[mfn])(?P<num>[sp])[^=]+=(?P<sidx>\d+) [^=]+=(?P<tlemma>[^=]+)=Nc(?P=gen)(?P=num)[^=]+=(?P<tidx>\d+)\b
+
+# =========================================================
+# Adj-T Noun-S modification constructions
+#
+START CXN: T-adj_S-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+	?sent rdf:type doc:Sentence .
+	?sent doc:hasIdx ?sentidx .
+	?target rdf:type doc:Word .
+	?target doc:hasIdx ?tidx .
+	?target doc:hasLemma ?tlemma .
+	?source rdf:type doc:Word .
+	?source doc:hasIdx ?sidx .
+	?source doc:hasLemma ?slemma .
+	?target doc:inSentence ?sent .
+	?source doc:inSentence ?sent .
+	?source doc:hasPOS ?spos .
+	?target doc:hasPOS ?tpos .
+	FILTER regex(?spos, "^N") .
+	FILTER regex(?tpos, "^A") .
+   	?target doc:adjmod ?source .
+}
+END CXN
+
+# =========================================================
+# Adj-T Noun-S modification construction: backup in case parse fails
+# политическая=политический=Afpfsnf=4 пропасть=пропасть=Ncfsnn=5
+# make sure number/gender match
+#
+START CXN: T-adj_S-noun.POSseq
+REGEXP: \b[^=]+=(?P<tlemma>[^=]+)=Af[pcs](?P<gen>[mfn])(?P<num>[sp])[^=]+=(?P<tidx>\d+) [^=]+=(?P<slemma>[^=]+)=Nc(?P=gen)(?P=num)[^=]+=(?P<sidx>\d+)\b
+
+# =========================================================
+# S-Noun PP T-Noun constructions: бегству=бегство=Ncnsdn=4 от=от=Sp-g=5 бедности=бедность=Ncfsgn=6
+#
+START CXN: S-noun_pp_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    ?target doc:hasPOS ?tpos .
+    FILTER regex(?spos, "^N") .
+    FILTER regex(?tpos, "^N") .
+    ?prep rdf:type doc:Word .
+    ?prep doc:inSentence ?sent .
+    ?target doc:objprep ?prep .
+    ?prep (doc:dep|doc:spmod) ?source .
+}
+END CXN
+
+# =========================================================
+# S-Noun PP T-Noun modification construction: backup in case parse fails
+# бегству=бегство=Ncnsdn=4 от=от=Sp-g=5 бедности=бедность=Ncfsgn=6
+#
+START CXN: S-noun_pp_T-noun.POSseq
+REGEXP: \b[^=]+=(?P<slemma>[^=]+)=Nc[^=]+=(?P<sidx>\d+) [^=]+=[^=]{1,2}=Sp[^=]+=\d+ [^=]+=(?P<tlemma>[^=]+)=Nc[^=]+=(?P<tidx>\d+)\b
+
+# =========================================================
+# S-Verb PP T-Noun constructions: 
+#
+START CXN: S-verb_pp_T-noun
+SELECT ?tlemma ?slemma ?sentidx ?tidx ?sidx
+WHERE {
+    ?sent rdf:type doc:Sentence .
+    ?sent doc:hasIdx ?sentidx .
+    ?target rdf:type doc:Word .
+    ?target doc:hasIdx ?tidx .
+    ?target doc:hasLemma ?tlemma .
+    ?source rdf:type doc:Word .
+    ?source doc:hasIdx ?sidx .
+    ?source doc:hasLemma ?slemma .
+    ?target doc:inSentence ?sent .
+    ?source doc:inSentence ?sent .
+    ?source doc:hasPOS ?spos .
+    ?target doc:hasPOS ?tpos .
+    FILTER regex(?spos, "^V") .
+    FILTER regex(?tpos, "^N") .
+    ?prep rdf:type doc:Word .
+    ?prep doc:inSentence ?sent .
+    ?target doc:objprep ?prep .
+    ?prep (doc:dep|doc:spmod) ?source .
+}
+END CXN
+

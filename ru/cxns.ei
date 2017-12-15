@@ -1,0 +1,3 @@
+@S@ =Sp[\w-]* @T@		Source PREP Target (battle against poverty)
+@T@ @S@		Target Source (economic growth)
+@S@ @T@		Source Target (low income)

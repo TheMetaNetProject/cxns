@@ -1,0 +1,8 @@
+@S@ de =ART @T@		jaula de la pobreza
+@S@ de @T@		rostro de rezago
+@S@ del @T@		same as above but with del
+@S@ =PREP =ART @T@		viven en la pobreza
+@S@ =PREP @T@		Source PREP Target (battle against poverty)
+@S@ =ART @T@		curar la pobreza
+@T@ @S@		Target Source (economic growth)
+@S@ @T@		Source Target (low income)
